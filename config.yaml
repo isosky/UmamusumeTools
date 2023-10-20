@@ -1,0 +1,9 @@
+version: 0.0.1
+bot:
+  auto:
+    adb:
+      device_name: "127.0.0.1:16480" # 第1个
+      delay: 0.5
+    cpu_alloc: 4
+logs_name: 16480
+role_name: "北京曹孟德"

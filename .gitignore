@@ -1,0 +1,8 @@
+venv
+.idea
+userdata
+*.log
+*.pyc
+__init__.py
+.vscode
+*.jpg
