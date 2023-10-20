@@ -37,6 +37,7 @@ class UraRoleList(Enum):
     AILISUZI = 32
     LUDAOFUXIANGZHENG = 33
     SHENGLIJIANGQUAN_1 = 34
+    ZHONGPAO_1 = 35
 
 
 class SupportCardType(Enum):
