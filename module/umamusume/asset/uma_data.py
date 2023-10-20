@@ -10,7 +10,7 @@ UMA_LIST: dict = {}
 UMAMUSUME_RACE_TEMPLATE_PATH = "userdata/" + CONFIG.role_name
 
 
-def load_uma_data():
+def load_uma_list():
     files = os.listdir(UMAMUSUME_RACE_TEMPLATE_PATH)
     for file in files:
         if 'unknown' in file:
@@ -28,4 +28,4 @@ def load_uma_data():
             UMA_LIST[file.split(".")[0]] = ""
 
 
-load_uma_data()
+load_uma_list()

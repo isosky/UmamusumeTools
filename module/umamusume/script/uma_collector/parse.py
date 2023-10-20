@@ -8,6 +8,7 @@ from module.umamusume.context import UmamusumeContext
 from module.umamusume.asset import *
 from module.umamusume.define import *
 import bot.base.log as logger
+from config import CONFIG
 
 log = logger.get_logger(__name__)
 
@@ -59,7 +60,7 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
         log.info(f"{uuid_str} 已经获取过，跳过")
         ctx.ctrl.click(719, 1, "返回列表")
         return
-    ctx.uma_result[uuid_str] = {"base_info": base_info, "relation": {}, "factor": {}}
+    ctx.uma_result[uuid_str] = {"base_info": base_info, "relation": {}, "factor": {}, "data_version": CONFIG.dataversion, "account": CONFIG.role_name}
     ctx.uma_now = uuid_str
     # TODO 适应性解析
     # TODO 技能解析
@@ -80,7 +81,7 @@ def parse_uma_role(ctx: UmamusumeContext, img):
             log.debug("detect 头像 cost: " + str(end_time - start_time))
             return UraRoleList(i+1).name.lower().split('_')[0]
     log.warning("有未添加的头像，请人工处理")
-    cv2.imwrite("resource/unknown_uma/npc_role" + str(int(time.time())) + ".jpg", temp1)
+    cv2.imwrite("resource/unknown_uma/uma_" + str(int(time.time())) + ".jpg", temp1)
     end_time = time.time()
     log.debug("detect 头像 cost: " + str(end_time - start_time))
     return UraRoleList(0).name.lower().split('_')[0]
@@ -106,7 +107,6 @@ def parser_uma_second_page(ctx: UmamusumeContext, img):
             if not image_match(factor_img_gray, UI_PARENT_FACTOR_STAR).find_match:
                 log.debug("没有因子了")
                 break
-
         factor_txt_img = factor_img[14:34, 36:230]
         factor_txt = ocr_line(factor_txt_img)
         factor_level = 0
@@ -118,6 +118,9 @@ def parser_uma_second_page(ctx: UmamusumeContext, img):
                 break
         if len(factor_txt) < 1:
             log.warning(f"{ctx.uma_now} 有因子未解析，需要检查")
+            cv2.imwrite("resource/unknown_factor/factor_" + str(int(time.time())) + ".jpg", factor_txt_img)
+            i += 1
+            break
         res_factor[factor_txt] = factor_level
         i += 1
     time.sleep(0.3)
@@ -177,6 +180,7 @@ def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
         factor_img_gray = cv2.cvtColor(factor_img, cv2.COLOR_BGR2GRAY)
         if i > 2:
             if not image_match(factor_img_gray, UI_PARENT_FACTOR_STAR).find_match:
+                log.debug("没有因子了")
                 break
         factor_txt_img = factor_img[10:37, 30:230]
         factor_txt = ocr_line(factor_txt_img)
@@ -189,6 +193,9 @@ def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
                 break
         if len(factor_txt) < 1:
             log.warning(f"{ctx.uma_now} 有因子未解析，需要检查")
+            cv2.imwrite("resource/unknown_factor/factor_" + str(int(time.time())) + ".jpg", factor_txt_img)
+            i += 1
+            break
         res_factor[factor_txt] = factor_level
         i += 1
     time.sleep(0.3)
