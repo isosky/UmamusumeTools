@@ -1,6 +1,8 @@
 import re
 import time
 import cv2
+import hashlib
+import json
 
 from bot.recog.image_matcher import image_match, compare_color_equal
 from bot.recog.ocr import ocr_line
@@ -47,11 +49,11 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
     intelligence_text = ocr_line(intelligence_img)
     intelligence_text = re.sub("\\D", "", intelligence_text)
 
-    log.info(f"评分为：{speed_text} {stamina_text} {power_text} {will_text} {intelligence_text}")
+    log.info(f"属性为：{speed_text},{stamina_text},{power_text},{will_text},{intelligence_text}")
 
-    role_name = parse_uma_role(ctx, img)
-    log.info(role_name)
-    base_info = {"role_name": role_name, "score": score, "speed": speed_text, "stamina": stamina_text, "power": power_text, "will": will_text, "intelligence": intelligence_text}
+    uma_name = parse_uma_role(ctx, img)
+    log.info(uma_name)
+    base_info = {"uma_name": uma_name, "score": score, "speed": speed_text, "stamina": stamina_text, "power": power_text, "will": will_text, "intelligence": intelligence_text}
     base_info_list = ['-' if x == '' else str(x) for x in base_info.values()]
     uuid_str = "_".join(base_info_list)
     log.info(uuid_str)
@@ -65,7 +67,7 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
     # TODO 适应性解析
     # TODO 技能解析
     ctx.ctrl.click(360, 554, "点击继承")
-    time.sleep(0.5)
+    time.sleep(1)
 
 
 def parse_uma_role(ctx: UmamusumeContext, img):
@@ -117,7 +119,8 @@ def parser_uma_second_page(ctx: UmamusumeContext, img):
             else:
                 break
         if len(factor_txt) < 1:
-            log.warning(f"{ctx.uma_now} 有因子未解析，需要检查")
+            log.warning(f"{ctx.uma_now}  自己 有因子未解析，需要检查")
+            cv2.imwrite("resource/unknown_factor/factor_" + str(int(time.time())) + ".jpg", origin_img)
             cv2.imwrite("resource/unknown_factor/factor_" + str(int(time.time())) + ".jpg", factor_txt_img)
             i += 1
             break
@@ -133,14 +136,10 @@ def parser_uma_second_page(ctx: UmamusumeContext, img):
 def parser_uma_third_page(ctx: UmamusumeContext, img):
     parser_support_card_list(ctx)
     log.info("开始解析父母因子")
-    parents_location = {'bb': [120, 930],
-                        'yy': [285, 870],
-                        'nn': [285, 980],
-                        'mm': [450, 930],
-                        'wg': [620, 870],
-                        'wp': [620, 980]}
+    parents_location = {'bb': {"loc": [120, 930], "parent": {"yy": [285, 870], "nn": [285, 980]}},
+                        'mm': {"loc": [450, 930], "parent": {"wg": [620, 870], "wp": [620, 980]}}}
     for k, v in parents_location.items():
-        parser_parent_factor(ctx, k, v)
+        get_parent_factor(ctx, k, v)
     time.sleep(0.5)
     parser_race_list(ctx)
     ctx.ctrl.click(719, 1, "返回列表")
@@ -156,15 +155,33 @@ def parser_race_list(ctx: UmamusumeContext):
     pass
 
 
-def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
-    ctx.ctrl.click(location[0], location[1], relation)
+def get_parent_factor(ctx: UmamusumeContext, relation: str, infos: dict):
+    md5, uma_name, factor, is_borrow = parser_parent_factor(ctx, relation, infos['loc'])
+    if md5 not in ctx.uma_data_info:
+        log.info(f"{uma_name} {md5} 不存在，抓取祖辈*****")
+        ctx.uma_data_info[md5] = {}
+        ctx.uma_data_info[md5][relation] = {'uma_name': uma_name, 'factor': factor, 'is_borrow': is_borrow, 'md5': md5}
+        for k, v in infos['parent'].items():
+            uma_name, factor = parser_parent_factor(ctx, k, v)
+            ctx.uma_data_info[md5][k] = {'uma_name': uma_name, 'factor': factor, 'is_borrow': is_borrow}
+    ctx.uma_result[ctx.uma_now]['relation'].update(ctx.uma_data_info[md5])
     time.sleep(0.5)
+
+
+def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
+    ctx.ctrl.click(location[0], location[1], '点击头像')
     origin_img = ctx.ctrl.get_screen()
-    role_name = parse_uma_role(ctx, origin_img)
+    origin_img_gray = cv2.cvtColor(origin_img, cv2.COLOR_BGR2GRAY)
+    while not image_match(origin_img_gray, UI_YINZIYILAN).find_match:
+        origin_img = ctx.ctrl.get_screen()
+        origin_img_gray = cv2.cvtColor(origin_img, cv2.COLOR_BGR2GRAY)
+        time.sleep(0.5)
+    origin_img = ctx.ctrl.get_screen()
+    uma_name = parse_uma_role(ctx, origin_img)
     # left_top 35,352,单个高度为60，长度为320
 
-    is_borrow = False
     basic_heigt = 352
+    is_borrow = False
     origin_img_gray = cv2.cvtColor(origin_img, cv2.COLOR_BGR2GRAY)
     if image_match(origin_img_gray, UI_UMA_BORROW).find_match:
         log.info("这个赛马娘是借用的")
@@ -176,7 +193,7 @@ def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
     while i < 20:
         row = i // 2
         column = i % 2
-        factor_img = origin_img[(basic_heigt+row*60):(basic_heigt+row*60+60), (35+column*330):(35+column*330+320)]
+        factor_img = origin_img[(basic_heigt+row*59):(basic_heigt+row*59+59), (35+column*330):(35+column*330+320)]
         factor_img_gray = cv2.cvtColor(factor_img, cv2.COLOR_BGR2GRAY)
         if i > 2:
             if not image_match(factor_img_gray, UI_PARENT_FACTOR_STAR).find_match:
@@ -192,17 +209,27 @@ def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
             else:
                 break
         if len(factor_txt) < 1:
-            log.warning(f"{ctx.uma_now} 有因子未解析，需要检查")
+            log.warning(f"{ctx.uma_now} {uma_name} 有因子未解析，需要检查")
+            cv2.imwrite("resource/unknown_factor/factor_" + str(int(time.time())) + ".jpg", origin_img)
             cv2.imwrite("resource/unknown_factor/factor_" + str(int(time.time())) + ".jpg", factor_txt_img)
             i += 1
             break
         res_factor[factor_txt] = factor_level
         i += 1
     time.sleep(0.3)
-    log.info(f"{relation} 有 {i} 个因子")
-    ctx.uma_result[ctx.uma_now]["relation"][relation] = {}
-    ctx.uma_result[ctx.uma_now]["relation"][relation]['uma_name'] = role_name
-    ctx.uma_result[ctx.uma_now]["relation"][relation]['factor'] = res_factor
-    ctx.uma_result[ctx.uma_now]["relation"][relation]['factor'] = res_factor
-    ctx.uma_result[ctx.uma_now]["relation"][relation]['is_borrow'] = is_borrow
     ctx.ctrl.click(719, 1, "返回")
+    log.info(f"{relation} 有 {i} 个因子")
+    if relation in ['bb', 'mm']:
+        md5 = cal_md5(factor=res_factor)
+        return md5, uma_name, res_factor, is_borrow
+    else:
+        return uma_name, res_factor
+
+
+def cal_md5(factor: dict) -> str:
+    # log.debug(f"输入的因子dict 为：{factor}")
+    # 似乎没必要排序，因子是排好的
+    str_data = json.dumps(factor)
+    md5 = hashlib.md5(str_data.encode('utf-8')).hexdigest()
+    log.debug(f"输出的md5 为：{md5}")
+    return md5

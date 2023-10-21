@@ -213,6 +213,7 @@ def build_context(task: UmamusumeTask, ctrl) -> UmamusumeContext:
         ctx.uma_selector = 0
         ctx.uma_now = ''
         ctx.uma_result = {}
+        ctx.uma_data_info = {}
         ctx.exsit_uma = UMA_LIST
         ctx.is_final = False
         log.info("new tools")

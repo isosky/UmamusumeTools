@@ -9,7 +9,7 @@ class UraRoleList(Enum):
     TEBIEZHOU = 4
     SHENYING = 5
     MUBAILAIEN = 6
-    DASHUKUAICHE_1 = 7
+    DAHECHIJI_1 = 7
     FUTEJIA_1 = 8
     XIAOLIMAO = 9
     MUBAIMAIKUN = 10
