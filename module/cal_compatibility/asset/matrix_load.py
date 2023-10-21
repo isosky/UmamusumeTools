@@ -55,6 +55,7 @@ UMA_TRANSLATE: dict[str:str] = {"特别周": "tebiezhou",
 
 def compatibility_matrix_load():
     start_time = time.time()
+    log.info("加载matrix")
 
     for sheet_name in pd.read_excel(excel_file, sheet_name=None):
         if '换算版' in sheet_name or '双人' in sheet_name:

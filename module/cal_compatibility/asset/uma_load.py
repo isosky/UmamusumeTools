@@ -7,7 +7,7 @@ from config import CONFIG
 
 log = logger.get_logger(__name__)
 
-UMA_LIST: dict[str, dict] = {}
+UMA_DATA_ALL: dict[str, dict] = {}
 UMAMUSUME_RACE_TEMPLATE_PATH = "userdata/" + CONFIG.role_name
 
 BLUR_FACTOR: dict = {'速度': "", '耐力': "", '力量': "", '毅力': "", '智力': ""}
@@ -28,13 +28,12 @@ def load_uma_data():
         if 'json' in file:
             with open(os.path.join(UMAMUSUME_RACE_TEMPLATE_PATH, file), 'r', encoding='utf-8') as f:
                 temp = json.load(f)
-            temp_parent = [x['uma_name'] for x in temp['relation'].values()]
-            if 'unknown' in temp_parent:
+            if 'unknown' in temp['base_info']['uma_name'] or 'unknown' in temp['relation']['bb']['uma_name'] or 'unknown' in temp['relation']['mm']['uma_name']:
                 os.remove(os.path.join(UMAMUSUME_RACE_TEMPLATE_PATH, file))
                 log.info(f"{file} 中存在未识别的马娘，先移除")
                 continue
             uma_uuid = file.split(".")[0]
-            uma_name = temp["base_info"]['role_name']
+            uma_name = temp["base_info"]['uma_name']
             uma_factor = temp['factor']
             uma_father_name = temp["relation"]['bb']['uma_name']
             uma_father_factor = temp["relation"]['bb']['factor']
@@ -42,6 +41,7 @@ def load_uma_data():
             uma_mother_factor = temp["relation"]['mm']['factor']
             temp_factor_list = [uma_factor, uma_father_factor, uma_mother_factor]
 
+            blue_factor = {x: 0 for x in BLUR_FACTOR}
             blue_factor_result = ''
             blue_factor_count = 0
             blue_factor_count_match = 0
@@ -50,22 +50,28 @@ def load_uma_data():
                 for fl in temp_factor_list:
                     if k in fl:
                         temp += fl[k]
+                        blue_factor[k] += fl[k]
                 if temp != 0:
                     blue_factor_result = blue_factor_result + str(temp)+k
                 if k not in ['毅力', '智力']:
                     blue_factor_count += temp
                 blue_factor_count_match += temp
             # log.debug(f"{uma_uuid} {uma_name} blue factor:{blue_factor_result}")
+            blue_factor = {k: v for k, v in blue_factor.items() if v != 0}
 
+            red_factor = {x: 0 for x in RED_FACTOR}
             red_factor_result = ''
             for k in RED_FACTOR:
                 temp = 0
                 for fl in temp_factor_list:
                     if k in fl:
                         temp += fl[k]
+                        red_factor[k] += fl[k]
                 if temp != 0:
                     red_factor_result = red_factor_result + str(temp)+k
             # log.debug(f"{uma_uuid} {uma_name} red factor:{red_factor_result}")
+            red_factor = {k: v for k, v in red_factor.items() if v != 0}
+
             factor_list = {}
             temp_factor = set(uma_factor.keys()) | set(uma_father_factor.keys()) | set(uma_mother_factor.keys())
             for k in temp_factor:
@@ -77,9 +83,9 @@ def load_uma_data():
                         _temp.append(0)
                 factor_list[k] = _temp
 
-            UMA_LIST[uma_uuid] = {'uma_uuid': uma_uuid, 'uma_name': uma_name, 'uma_factor': uma_factor, 'uma_father_name': uma_father_name, 'uma_father_factor': uma_father_factor, 'uma_mother_name': uma_mother_name, 'uma_mother_factor': uma_mother_factor,
-                                  'cap_sum': 0, "score": 0, "blue_factor_result": blue_factor_result, "red_factor_result": red_factor_result, "factor_list": factor_list,
-                                  "blue_factor_count": blue_factor_count, "blue_factor_count_match": blue_factor_count_match}
+            UMA_DATA_ALL[uma_uuid] = {'uma_uuid': uma_uuid, 'uma_name': uma_name, 'uma_factor': uma_factor, 'uma_father_name': uma_father_name, 'uma_father_factor': uma_father_factor, 'uma_mother_name': uma_mother_name, 'uma_mother_factor': uma_mother_factor,
+                                      'cap_sum': 0, "score": 0, "blue_factor": blue_factor, "blue_factor_result": blue_factor_result, "red_factor": red_factor, "red_factor_result": red_factor_result, "factor_list": factor_list,
+                                      "blue_factor_count": blue_factor_count, "blue_factor_count_match": blue_factor_count_match}
             # log.debug(UMA_LIST[uma_uuid])
 
     log.info(f"加载马娘数据耗时:{time.time()-start_time}")
