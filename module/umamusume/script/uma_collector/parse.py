@@ -57,17 +57,23 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
     base_info_list = ['-' if x == '' else str(x) for x in base_info.values()]
     uuid_str = "_".join(base_info_list)
     log.info(uuid_str)
-    if uuid_str in ctx.exsit_uma:
-        # TODO 优化结束方式
+    if uuid_str in ctx.exist_uma:
         log.info(f"{uuid_str} 已经获取过，跳过")
         ctx.ctrl.click(719, 1, "返回列表")
-        return
+        ctx.exist_count += 1
+        if ctx.exist_count > 5:
+            return '超过5次'
+        return None
+
+    ctx.exist_count = 0
     ctx.uma_result[uuid_str] = {"base_info": base_info, "relation": {}, "factor": {}, "data_version": CONFIG.dataversion, "account": CONFIG.role_name}
+    ctx.exist_uma[uuid_str] = ""
     ctx.uma_now = uuid_str
     # TODO 适应性解析
     # TODO 技能解析
     ctx.ctrl.click(360, 554, "点击继承")
     time.sleep(1)
+    return None
 
 
 def parse_uma_role(ctx: UmamusumeContext, img):
@@ -104,12 +110,13 @@ def parser_uma_second_page(ctx: UmamusumeContext, img):
             break
         factor_img = origin_img[(655+row*59):(655+row*59+60), (137+column*280):(137+column*280+270)]
         factor_img_gray = cv2.cvtColor(factor_img, cv2.COLOR_BGR2GRAY)
-        if i > 2:
+        if i > 1:
             # 如果没横向就是没因子了，跳出，用gray图去做match
             if not image_match(factor_img_gray, UI_PARENT_FACTOR_STAR).find_match:
                 log.debug("没有因子了")
                 break
         factor_txt_img = factor_img[14:34, 36:230]
+        factor_txt_img = cv2.copyMakeBorder(factor_txt_img, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
         factor_txt = ocr_line(factor_txt_img)
         factor_level = 0
         factor_level_check_point = [factor_img[45, 110], factor_img[45, 135], factor_img[45, 160]]
@@ -136,8 +143,8 @@ def parser_uma_second_page(ctx: UmamusumeContext, img):
 def parser_uma_third_page(ctx: UmamusumeContext, img):
     parser_support_card_list(ctx)
     log.info("开始解析父母因子")
-    parents_location = {'bb': {"loc": [120, 930], "parent": {"yy": [285, 870], "nn": [285, 980]}},
-                        'mm': {"loc": [450, 930], "parent": {"wg": [620, 870], "wp": [620, 980]}}}
+    parents_location = {'bb': {"loc": [120, 930], "parent": {"bb": [285, 870], "mm": [285, 980]}},
+                        'mm': {"loc": [450, 930], "parent": {"bb": [620, 870], "mm": [620, 980]}}}
     for k, v in parents_location.items():
         get_parent_factor(ctx, k, v)
     time.sleep(0.5)
@@ -159,16 +166,15 @@ def get_parent_factor(ctx: UmamusumeContext, relation: str, infos: dict):
     md5, uma_name, factor, is_borrow = parser_parent_factor(ctx, relation, infos['loc'])
     if md5 not in ctx.uma_data_info:
         log.info(f"{uma_name} {md5} 不存在，抓取祖辈*****")
-        ctx.uma_data_info[md5] = {}
-        ctx.uma_data_info[md5][relation] = {'uma_name': uma_name, 'factor': factor, 'is_borrow': is_borrow, 'md5': md5}
+        ctx.uma_data_info[md5] = {'uma_name': uma_name, 'factor': factor, 'is_borrow': is_borrow, 'md5': md5}
         for k, v in infos['parent'].items():
-            uma_name, factor = parser_parent_factor(ctx, k, v)
+            uma_name, factor = parser_parent_factor(ctx, k, v, isparent=True)
             ctx.uma_data_info[md5][k] = {'uma_name': uma_name, 'factor': factor, 'is_borrow': is_borrow}
-    ctx.uma_result[ctx.uma_now]['relation'].update(ctx.uma_data_info[md5])
+    ctx.uma_result[ctx.uma_now]['relation'][relation] = ctx.uma_data_info[md5]
     time.sleep(0.5)
 
 
-def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
+def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list, isparent: bool = False):
     ctx.ctrl.click(location[0], location[1], '点击头像')
     origin_img = ctx.ctrl.get_screen()
     origin_img_gray = cv2.cvtColor(origin_img, cv2.COLOR_BGR2GRAY)
@@ -195,7 +201,7 @@ def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
         column = i % 2
         factor_img = origin_img[(basic_heigt+row*59):(basic_heigt+row*59+59), (35+column*330):(35+column*330+320)]
         factor_img_gray = cv2.cvtColor(factor_img, cv2.COLOR_BGR2GRAY)
-        if i > 2:
+        if i > 1:
             if not image_match(factor_img_gray, UI_PARENT_FACTOR_STAR).find_match:
                 log.debug("没有因子了")
                 break
@@ -219,7 +225,7 @@ def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list):
     time.sleep(0.3)
     ctx.ctrl.click(719, 1, "返回")
     log.info(f"{relation} 有 {i} 个因子")
-    if relation in ['bb', 'mm']:
+    if not isparent:
         md5 = cal_md5(factor=res_factor)
         return md5, uma_name, res_factor, is_borrow
     else:

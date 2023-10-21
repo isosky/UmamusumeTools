@@ -1,7 +1,6 @@
 import logging
 import sys
-from logging import Logger, Formatter
-from logging.handlers import TimedRotatingFileHandler
+from logging import Logger, FileHandler, Formatter
 from config import CONFIG
 import colorlog
 
@@ -31,10 +30,9 @@ def get_logger(name) -> Logger:
         logger.addHandler(console_handler)
 
         LOG_LEVEL = 'WARN'
-        rolling_handler = TimedRotatingFileHandler(
-            LOG_FILE, when='midnight', interval=1)
-        rolling_handler.setLevel(LOG_LEVEL)
-        rolling_handler.setFormatter(Formatter(
+        file_handler = FileHandler(LOG_FILE)
+        file_handler.setLevel(LOG_LEVEL)
+        file_handler.setFormatter(Formatter(
             ' %(asctime)s  %(levelname)-8s [%(funcName)34s] %(filename)-20s: %(message)s'))
-        logger.addHandler(rolling_handler)
+        logger.addHandler(file_handler)
     return logger
