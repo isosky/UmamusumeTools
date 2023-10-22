@@ -41,6 +41,7 @@ def script_to_uma(ctx: UmamusumeContext):
         # ctx.task.end_task(TaskStatus.TASK_STATUS_INTERRUPT, EndTaskReason.MANUAL_ABORTED)
         return
     log.info(ctx.uma_selector)
+    log.debug(f"下一个点击的位置为：{90+ctx.uma_selector % 5*130} , {180+ctx.uma_selector // 5*160}")
     ctx.ctrl.click(90+ctx.uma_selector % 5*130, 180+ctx.uma_selector // 5*160, "")
     ctx.uma_selector += 1
     time.sleep(1)
@@ -49,8 +50,11 @@ def script_to_uma(ctx: UmamusumeContext):
 
 def script_uma_frist_page(ctx: UmamusumeContext):
     img = ctx.current_screen
-    parser_uma_frist_page(ctx, img)
-    check_finish(ctx=ctx)
+    result_str = parser_uma_frist_page(ctx, img)
+    if result_str == '超过5次':
+        log.info("连续存在的马娘超过5次")
+        ctx.ctrl.click(719, 1, "")
+        ctx.task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
 
 
 def script_not_found_ui(ctx: UmamusumeContext):
