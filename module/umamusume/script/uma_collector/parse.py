@@ -59,6 +59,7 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
     log.info(uuid_str)
     if uuid_str in ctx.exist_uma:
         log.info(f"{uuid_str} 已经获取过，跳过")
+        ctx.uma_result[uuid_str] = {}
         ctx.ctrl.click(719, 1, "返回列表")
         ctx.exist_count += 1
         if ctx.exist_count > 5:

@@ -100,6 +100,8 @@ def cal_parents(target_name: str, temp_target_factor_list: list, uma_list: list,
         for i in range(len(uma_list)):
             # 如果有借用，主要是算父母相性
             temp = uma_list[i]
+            if temp['uma_name'] == borrow:
+                continue
             blue_factor_all = temp['blue_factor'].copy()
             red_factor_all = temp['red_factor'].copy()
             couple_factor_match = temp['_target_factor_match'].copy()

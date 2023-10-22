@@ -2,6 +2,8 @@
 
 import pandas as pd
 import time
+import json
+import os
 import bot.base.log as logger
 
 log = logger.get_logger(__name__)
@@ -54,9 +56,22 @@ UMA_TRANSLATE: dict[str:str] = {"特别周": "tebiezhou",
 
 
 def compatibility_matrix_load():
+    global UMA_PARENT_COMPATIBILITY, UMA_GRAND_COMPATIBILITY
     start_time = time.time()
     log.info("加载matrix")
+    if os.path.exists('resource/umamusume/data/UMA_GRAND_COMPATIBILITY.json') and os.path.exists('resource/umamusume/data/UMA_PARENT_COMPATIBILITY.json'):
+        log.info("从json中加载")
+        with open('resource/umamusume/data/UMA_GRAND_COMPATIBILITY.json', 'r', encoding='utf8') as f:
+            temp = json.load(f)
+            UMA_GRAND_COMPATIBILITY = temp
 
+        with open('resource/umamusume/data/UMA_PARENT_COMPATIBILITY.json', 'r', encoding='utf8') as f:
+            temp = json.load(f)
+            UMA_PARENT_COMPATIBILITY = temp
+        log.info(f"加载相性表耗时:{time.time()-start_time}")
+        return
+
+    log.info("转换excel到json")
     for sheet_name in pd.read_excel(excel_file, sheet_name=None):
         if '换算版' in sheet_name or '双人' in sheet_name:
             continue
@@ -85,6 +100,12 @@ def compatibility_matrix_load():
                         UMA_PARENT_COMPATIBILITY[k] = value
 
     log.info(f"加载相性表耗时:{time.time()-start_time}")
+
+    with open('resource/umamusume/data/UMA_GRAND_COMPATIBILITY.json', 'w', encoding='utf8') as f:
+        f.write(json.dumps(UMA_GRAND_COMPATIBILITY, ensure_ascii=False))
+
+    with open('resource/umamusume/data/UMA_PARENT_COMPATIBILITY.json', 'w', encoding='utf8') as f:
+        f.write(json.dumps(UMA_PARENT_COMPATIBILITY, ensure_ascii=False))
 
 
 compatibility_matrix_load()

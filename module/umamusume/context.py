@@ -210,7 +210,7 @@ def build_context(task: UmamusumeTask, ctrl) -> UmamusumeContext:
         detail.extra_weight = task.detail.extra_weight
         ctx.cultivate_detail = detail
     if task.task_type == UmamusumeTaskType.UMAMUSUME_TASK_TYPE_TOOL:
-        ctx.uma_selector = 4
+        ctx.uma_selector = 0
         ctx.uma_now = ''
         ctx.uma_result = {}
         ctx.exist_uma = UMA_LIST
