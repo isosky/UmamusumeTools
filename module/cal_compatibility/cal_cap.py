@@ -45,6 +45,8 @@ def get_recommand_uma_list(target: dict, borrow: str = '', is_father: bool = Tru
     # 计算每个马娘和目标因子的匹配程度
     temp_target_factor_list = target['factor_list']
     for uma in UMA_DATA_ALL:
+        if UMA_DATA_ALL[uma]['uma_name'] == 'shenying_10533_1200_648_740_264_341':
+            log.info('asdasd')
         # log.debug(f" 开始计算 {UMA_LIST[uma]['uma_name']}")
         if is_bigmatch:
             # log.debug("大赛马考虑耐和智力")
@@ -84,7 +86,7 @@ def get_recommand_uma_list(target: dict, borrow: str = '', is_father: bool = Tru
 
     log.info(f'满足要求的马娘总计: {len(_res)}')
     if len(_res) == 0:
-        log.warn("一个组合也没有，放宽条件或者刷种马去吧")
+        log.warning("一个组合也没有，放宽条件或者刷种马去吧")
         return []
     res = sorted(_res, key=itemgetter('uma_name'))
     return_res = cal_parents(target['uma_name'], temp_target_factor_list, res, borrow=borrow)
@@ -104,47 +106,60 @@ def cal_parents(target_name: str, temp_target_factor_list: list, uma_list: list,
                 continue
             blue_factor_all = temp['blue_factor'].copy()
             red_factor_all = temp['red_factor'].copy()
-            couple_factor_match = temp['_target_factor_match'].copy()
-            couple_match_sum = sum(len([vv for vv in v if vv != 0]) for v in couple_factor_match.values())
+            all_factor_match = temp['_target_factor_match'].copy()
+            couple_factor_match = {k: x[0] for k, x in temp['_target_factor_match'].items()}
+            couple_match_sum = sum(len([vv for vv in v if vv != 0]) for v in all_factor_match.values())
             couple_cap_score = UMA_PARENT_COMPATIBILITY[target_name+'_'+temp['uma_name']+'_'+borrow] + temp['_uma_cap_score']
-            _temp_res.append({'red_factor_all': red_factor_all, 'blue_factor_all': blue_factor_all, 'couple_match_sum': couple_match_sum, 'couple_factor_match': couple_factor_match, 'couple_cap_score': couple_cap_score, 'father': temp, 'mother': borrow})
+            _temp_res.append({'red_factor_all': red_factor_all, 'blue_factor_all': blue_factor_all, 'couple_match_sum': couple_match_sum,
+                              'couple_factor_match': couple_factor_match, 'all_factor_match': all_factor_match, 'couple_cap_score': couple_cap_score,
+                              'father': temp, 'mother': borrow})
             ss += 1
         if ss == 0:
-            log.warn("一个组合也没有，放宽条件或者刷种马去吧")
+            log.warning("一个组合也没有，放宽条件或者刷种马去吧")
             return []
         log.info(f"总计有：{ss} 种组合")
         return _temp_res
     for i in range(len(uma_list)):
         temp = uma_list[i]
         for j in uma_list[i+1:]:
-            if temp['uma_name'] == j['uma_name']:
-                continue
-        ss += 1
-        couple_factor_match = {}
-        for ttf in temp_target_factor_list:
-            temp_ss = [0, 0, 0]
-            if ttf in temp['_target_factor_match']:
-                temp_ss = temp['_target_factor_match'][ttf].copy()
-            if ttf in j['_target_factor_match']:
-                temp_ss.extend(j['_target_factor_match'][ttf])
-            else:
-                temp_ss.extend([0, 0, 0])
-            couple_factor_match[ttf] = temp_ss
-        # 计算相性
-        couple_cap_score = UMA_PARENT_COMPATIBILITY[target_name+'_'+temp['uma_name']+'_'+j['uma_name']] + temp['_uma_cap_score'] + j['_uma_cap_score']
-        # 蓝因子合并
-        blue_factor_all = temp['blue_factor'].copy()
-        blue_factor_all.update({k: blue_factor_all.get(k, 0) + v for k, v in j['blue_factor'].items()})
+            if temp['uma_name'] != j['uma_name']:
+                ss += 1
+                all_factor_match = {}
+                couple_factor_match = {}
+                for ttf in temp_target_factor_list:
+                    temp_ss = [0, 0, 0]
+                    _temp_ss = [0, 0]
+                    if ttf in temp['_target_factor_match']:
+                        temp_ss = temp['_target_factor_match'][ttf].copy()
+                    if ttf in j['_target_factor_match']:
+                        temp_ss.extend(j['_target_factor_match'][ttf])
+                    else:
+                        temp_ss.extend([0, 0, 0])
+                    all_factor_match[ttf] = temp_ss
+                    if ttf in temp['_target_factor_match']:
+                        if temp['_target_factor_match'][ttf][0] > 0:
+                            _temp_ss[0] = temp['_target_factor_match'][ttf][0]
+                    if ttf in j['_target_factor_match']:
+                        if j['_target_factor_match'][ttf][0] > 0:
+                            _temp_ss[1] = j['_target_factor_match'][ttf][0]
+                    couple_factor_match[ttf] = _temp_ss
+                # 计算相性
+                couple_cap_score = UMA_PARENT_COMPATIBILITY[target_name+'_'+temp['uma_name']+'_'+j['uma_name']] + temp['_uma_cap_score'] + j['_uma_cap_score']
+                # 蓝因子合并
+                blue_factor_all = temp['blue_factor'].copy()
+                blue_factor_all.update({k: blue_factor_all.get(k, 0) + v for k, v in j['blue_factor'].items()})
 
-        # 红因子合并
-        red_factor_all = temp['red_factor'].copy()
-        red_factor_all.update({k: red_factor_all.get(k, 0) + v for k, v in j['red_factor'].items()})
+                # 红因子合并
+                red_factor_all = temp['red_factor'].copy()
+                red_factor_all.update({k: red_factor_all.get(k, 0) + v for k, v in j['red_factor'].items()})
 
-        couple_match_sum = sum(len([vv for vv in v if vv != 0]) for v in couple_factor_match.values())
+                couple_match_sum = sum(len([vv for vv in v if vv != 0]) for v in all_factor_match.values())
 
-        _temp_res.append({'red_factor_all': red_factor_all, 'blue_factor_all': blue_factor_all, 'couple_match_sum': couple_match_sum, 'couple_factor_match': couple_factor_match, 'couple_cap_score': couple_cap_score, 'father': temp, 'mother': j})
+                _temp_res.append({'red_factor_all': red_factor_all, 'blue_factor_all': blue_factor_all,
+                                  'couple_factor_match': couple_factor_match, 'couple_match_sum': couple_match_sum, 'all_factor_match': all_factor_match,
+                                  'couple_cap_score': couple_cap_score, 'father': temp, 'mother': j})
     if ss == 0:
-        log.warn("一个组合也没有，放宽条件或者刷种马去吧")
+        log.warning("一个组合也没有，放宽条件或者刷种马去吧")
         return []
     log.info(f"总计有：{ss} 种组合")
     return _temp_res

@@ -51,8 +51,8 @@ def script_to_uma(ctx: UmamusumeContext):
 def script_uma_frist_page(ctx: UmamusumeContext):
     img = ctx.current_screen
     result_str = parser_uma_frist_page(ctx, img)
-    if result_str == '超过5次':
-        log.info("连续存在的马娘超过5次")
+    if result_str == '超过6次':
+        log.info("连续存在的马娘超过6次")
         ctx.ctrl.click(719, 1, "")
         ctx.task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
 

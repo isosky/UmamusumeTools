@@ -21,33 +21,33 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
     score_img = img[269:291, 85:200]
     score_img = cv2.copyMakeBorder(score_img, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
     score = ocr_line(score_img)
-    score = re.sub("\\D", "", score)
+    score = int(re.sub("\\D", "", score))
     log.info(f"评分为：{score}")
 
     speed_img = img[345:375, 75:150]
     speed_img = cv2.copyMakeBorder(speed_img, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
     speed_text = ocr_line(speed_img)
-    speed_text = re.sub("\\D", "", speed_text)
+    speed_text = int(re.sub("\\D", "", speed_text))
 
     stamina_img = img[345:375, 210:280]
     stamina_img = cv2.copyMakeBorder(stamina_img, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
     stamina_text = ocr_line(stamina_img)
-    stamina_text = re.sub("\\D", "", stamina_text)
+    stamina_text = int(re.sub("\\D", "", stamina_text))
 
     power_img = img[345:375, 345:420]
     power_img = cv2.copyMakeBorder(power_img, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
     power_text = ocr_line(power_img)
-    power_text = re.sub("\\D", "", power_text)
+    power_text = int(re.sub("\\D", "", power_text))
 
     will_img = img[345:375, 480:555]
     will_img = cv2.copyMakeBorder(will_img, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
     will_text = ocr_line(will_img)
-    will_text = re.sub("\\D", "", will_text)
+    will_text = int(re.sub("\\D", "", will_text))
 
     intelligence_img = img[345:375, 615:690]
     intelligence_img = cv2.copyMakeBorder(intelligence_img, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
     intelligence_text = ocr_line(intelligence_img)
-    intelligence_text = re.sub("\\D", "", intelligence_text)
+    intelligence_text = int(re.sub("\\D", "", intelligence_text))
 
     log.info(f"属性为：{speed_text},{stamina_text},{power_text},{will_text},{intelligence_text}")
 
@@ -63,7 +63,7 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
         ctx.ctrl.click(719, 1, "返回列表")
         ctx.exist_count += 1
         if ctx.exist_count > 5:
-            return '超过5次'
+            return '超过6次'
         return None
 
     ctx.exist_count = 0
@@ -100,25 +100,24 @@ def parser_uma_second_page(ctx: UmamusumeContext, img):
     log.info("开始解析自己因子")
     img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     bottom = image_match(img_gray, UI_UMA_DETAIL_2_JICHENG).center_point[1]
+    log.debug(f"预计自己的因子行数为：{int(((bottom-10)-655)/60)+1}")
+    expected_row = int(((bottom-10)-655)/60)+1
     i = 0
     res_factor = {}
     origin_img = ctx.ctrl.get_screen()
-    while i < 20:
+    while i < expected_row*2:
         row = i // 2
         column = i % 2
-        if (352+row*60+60) > (bottom-10):
+        if (655+row*60) > (bottom-10):
             log.debug("超过《继承对象》")
             break
         factor_img = origin_img[(655+row*59):(655+row*59+60), (137+column*280):(137+column*280+270)]
-        factor_img_gray = cv2.cvtColor(factor_img, cv2.COLOR_BGR2GRAY)
-        if i > 1:
-            # 如果没横向就是没因子了，跳出，用gray图去做match
-            if not image_match(factor_img_gray, UI_PARENT_FACTOR_STAR).find_match:
-                log.debug("没有因子了")
-                break
         factor_txt_img = factor_img[14:34, 36:230]
         factor_txt_img = cv2.copyMakeBorder(factor_txt_img, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
         factor_txt = ocr_line(factor_txt_img)
+        if factor_txt == '':
+            log.debug("没有因子了")
+            break
         factor_level = 0
         factor_level_check_point = [factor_img[45, 110], factor_img[45, 135], factor_img[45, 160]]
         for fi in range(len(factor_level_check_point)):
@@ -201,13 +200,11 @@ def parser_parent_factor(ctx: UmamusumeContext, relation: str, location: list, i
         row = i // 2
         column = i % 2
         factor_img = origin_img[(basic_heigt+row*59):(basic_heigt+row*59+59), (35+column*330):(35+column*330+320)]
-        factor_img_gray = cv2.cvtColor(factor_img, cv2.COLOR_BGR2GRAY)
-        if i > 1:
-            if not image_match(factor_img_gray, UI_PARENT_FACTOR_STAR).find_match:
-                log.debug("没有因子了")
-                break
         factor_txt_img = factor_img[10:37, 30:230]
         factor_txt = ocr_line(factor_txt_img)
+        if factor_txt == '':
+            log.debug("没有因子了")
+            break
         factor_level = 0
         factor_level_check_point = [factor_img[45, 135], factor_img[45, 160], factor_img[45, 185]]
         for fi in range(len(factor_level_check_point)):
