@@ -115,8 +115,8 @@ class Executor:
             while self.active:
                 if task.task_status == TaskStatus.TASK_STATUS_RUNNING:
                     ctx.current_screen = ctx.ctrl.get_screen()
-                    # cv2.imwrite('last.jpg',ctx.current_screen)
-                    # task.end_task(TaskStatus.TASK_STATUS_SUCCESS,EndTaskReason.COMPLETE)
+                    # cv2.imwrite('last.jpg', ctx.current_screen)
+                    # task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
                     if ctx.current_screen is None:
                         log.debug("未检测到图像")
                         time.sleep(1)
