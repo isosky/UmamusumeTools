@@ -45,14 +45,7 @@ def script_to_uma(ctx: UmamusumeContext):
     ctx.ctrl.click(90+ctx.uma_selector % 5*130, 180+ctx.uma_selector // 5*160, "")
     ctx.uma_selector += 1
     time.sleep(1)
-    if ctx.uma_selector == 25:
-        log.info("需要判断是否到底了")
-        img = ctx.ctrl.get_screen()
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        if image_match(img, UI_UMA_LIST_FINAL).find_match:
-            log.info("到底了")
-            ctx.task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
-            return
+    check_finish(ctx=ctx)
 
 
 def script_uma_frist_page(ctx: UmamusumeContext):
@@ -82,3 +75,14 @@ def script_uma_third_page(ctx: UmamusumeContext):
     log.info(f"存储数据文件:{ctx.uma_now}")
     with open('userdata/'+CONFIG.role_name+'/'+ctx.uma_now+'.json', 'w', encoding="utf-8") as f:
         f.write(json.dumps(ctx.uma_result[ctx.uma_now], ensure_ascii=False))
+    check_finish(ctx=ctx)
+
+
+def check_finish(ctx: UmamusumeContext):
+    if ctx.uma_selector == 25:
+        log.info("需要判断是否到底了")
+        img = ctx.ctrl.get_screen(to_gray=True)
+        if image_match(img, UI_UMA_LIST_FINAL).find_match:
+            log.info("到底了")
+            ctx.task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
+            return
