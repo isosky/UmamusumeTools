@@ -62,6 +62,7 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
     log.info(uuid_str)
     if uuid_str in ctx.uma_file_list:
         log.info(f"{uuid_str} 已经处理过，跳过")
+        ctx.uma_result[uuid_str] = ''
         ctx.ctrl.click(719, 1, "返回列表")
         ctx.this_page_done += 1
         time.sleep(1)

@@ -1,6 +1,6 @@
 import json
 import time
-import cv2
+import shutil
 
 
 from bot.base.task import TaskStatus, EndTaskReason
@@ -40,7 +40,7 @@ def script_to_uma(ctx: UmamusumeContext):
         time.sleep(1)
     else:
         if check_finish(ctx=ctx):
-            time.sleep(2)
+            time.sleep(1)
             return
         if ctx.this_page_done >= 25:
             log.info(">>>>>>> 翻页")
@@ -101,7 +101,10 @@ def check_finish(ctx: UmamusumeContext):
         img = ctx.ctrl.get_screen(to_gray=True)
         if image_match(img, UI_UMA_LIST_FINAL).find_match:
             log.info("到底了")
-            # TODO 移动马娘
+            for uma in ctx.uma_file_list:
+                if uma not in ctx.uma_result:
+                    log.info(f"{uma} 已经不存在了，移走")
+                    shutil.move('userdata/'+CONFIG.role_name+'/'+uma+'.json', 'userdata/'+CONFIG.role_name+'_error/'+uma+'.json')
             ctx.task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
             return True
     else:

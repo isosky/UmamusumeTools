@@ -13,6 +13,8 @@ def folder_check():
         os.makedirs('resource/unknown_factor')
     if not os.path.exists('resource/unknown_uma'):
         os.makedirs('resource/unknown_uma')
+    if not os.path.exists('userdata/'+CONFIG.role_name+'_error'):
+        os.makedirs('userdata/'+CONFIG.role_name+'_error')
 
 
 folder_check()
