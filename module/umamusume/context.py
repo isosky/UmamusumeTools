@@ -1,5 +1,5 @@
 from bot.base.context import BotContext
-from module.umamusume.asset.uma_data import UMA_LIST, UMA_DATA_INFO
+from module.umamusume.asset.uma_data import UMA_NAME_SCORE, UMA_DATA_INFO, UMA_FILE_LIST
 from module.umamusume.task import UmamusumeTask, UmamusumeTaskType
 from module.umamusume.define import *
 import bot.base.log as logger
@@ -210,10 +210,14 @@ def build_context(task: UmamusumeTask, ctrl) -> UmamusumeContext:
         detail.extra_weight = task.detail.extra_weight
         ctx.cultivate_detail = detail
     if task.task_type == UmamusumeTaskType.UMAMUSUME_TASK_TYPE_TOOL:
-        ctx.uma_selector = 0
         ctx.uma_now = ''
         ctx.uma_result = {}
-        ctx.exist_uma = UMA_LIST
+        ctx.uma_name_score = UMA_NAME_SCORE
+        ctx.uma_file_list = UMA_FILE_LIST
+        ctx.this_page_is_work = False
+        ctx.this_page_todo = []
+        ctx.this_page_count = 0
+        ctx.this_page_done = 0
         ctx.uma_data_info = UMA_DATA_INFO
         ctx.exist_count = 0
         ctx.is_final = False

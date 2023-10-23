@@ -6,3 +6,9 @@ userdata
 __init__.py
 .vscode
 *.jpg
+test.py
+head/
+head_final/
+head_temp/
+test/
+test_test/

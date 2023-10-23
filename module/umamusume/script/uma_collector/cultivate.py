@@ -31,30 +31,45 @@ def script_to_umas(ctx: UmamusumeContext):
 
 
 def script_to_uma(ctx: UmamusumeContext):
-    # 一行5个，默认5行，单个头像应该是130*160 第一个 90，180
-    # TODO 从列表抓，判断哪些抓过，哪些需要处理
-    # uma_selector = 0
-    if ctx.uma_selector > 24:
-        ctx.ctrl.swipe(x1=350, y1=900, x2=350, y2=450, duration=1000, name="上滑")
-        ctx.uma_selector = 0
+    log.info("开始处理马娘页面")
+    if len(ctx.this_page_todo) > 0:
+        log.info(f"还剩 {len(ctx.this_page_todo)} 个马娘待处理")
+        temp = ctx.this_page_todo.pop()
+        ctx.ctrl.click(temp[0]+10, temp[1]+10, "点击马娘")
+        ctx.this_page_is_work = True
         time.sleep(1)
-        # ctx.task.end_task(TaskStatus.TASK_STATUS_INTERRUPT, EndTaskReason.MANUAL_ABORTED)
-        return
-    log.info(ctx.uma_selector)
-    log.debug(f"下一个点击的位置为：{90+ctx.uma_selector % 5*130} , {180+ctx.uma_selector // 5*160}")
-    ctx.ctrl.click(90+ctx.uma_selector % 5*130, 180+ctx.uma_selector // 5*160, "")
-    ctx.uma_selector += 1
-    time.sleep(1)
-    check_finish(ctx=ctx)
+    else:
+        if check_finish(ctx=ctx):
+            time.sleep(2)
+            return
+        if ctx.this_page_done >= 25:
+            log.info(">>>>>>> 翻页")
+            ctx.ctrl.swipe(x1=350, y1=900, x2=350, y2=450, duration=1000, name="上滑")
+            time.sleep(1)
+            ctx.this_page_is_work = False
+            ctx.this_page_done = 0
+        screen = ctx.ctrl.get_screen()
+        uma_result = uma_list_match(screen)
+        ctx.this_page_count = len(uma_result)
+        for uma in uma_result:
+            _temp = uma_result[uma]
+            if _temp[-1] in ctx.uma_name_score:
+                if len(ctx.uma_name_score[_temp[-1]]) == 1:
+                    # 将已经存在的添加进来
+                    ctx.this_page_done += 1
+                    ctx.uma_result[ctx.uma_name_score[_temp[-1]][0]] = ""
+                    log.debug(f'{_temp[-1]} 已经抓取过，跳过')
+                    continue
+                else:
+                    log.info(f"{_temp[-1]} 有多个同名马娘同评分，再次处理")
+            ctx.this_page_todo.append(_temp)
+        log.info(f" 本页需要处理的马娘数量为 { len(ctx.this_page_todo)}")
+        time.sleep(1)
 
 
 def script_uma_frist_page(ctx: UmamusumeContext):
     img = ctx.current_screen
-    result_str = parser_uma_frist_page(ctx, img)
-    if result_str == '超过6次':
-        log.info("连续存在的马娘超过6次")
-        ctx.ctrl.click(719, 1, "")
-        ctx.task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
+    parser_uma_frist_page(ctx, img)
 
 
 def script_not_found_ui(ctx: UmamusumeContext):
@@ -75,14 +90,19 @@ def script_uma_third_page(ctx: UmamusumeContext):
     log.info(f"存储数据文件:{ctx.uma_now}")
     with open('userdata/'+CONFIG.role_name+'/'+ctx.uma_now+'.json', 'w', encoding="utf-8") as f:
         f.write(json.dumps(ctx.uma_result[ctx.uma_now], ensure_ascii=False))
-    check_finish(ctx=ctx)
+    if check_finish(ctx=ctx):
+        time.sleep(1)
+        return
 
 
 def check_finish(ctx: UmamusumeContext):
-    if ctx.uma_selector == 25:
+    if ctx.this_page_done == 25 or ctx.this_page_count == ctx.this_page_done:
         log.info("需要判断是否到底了")
         img = ctx.ctrl.get_screen(to_gray=True)
         if image_match(img, UI_UMA_LIST_FINAL).find_match:
             log.info("到底了")
+            # TODO 移动马娘
             ctx.task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
-            return
+            return True
+    else:
+        return False

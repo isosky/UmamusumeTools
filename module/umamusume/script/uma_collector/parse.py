@@ -3,6 +3,9 @@ import time
 import cv2
 import hashlib
 import json
+import random
+import os
+import numpy as np
 
 from bot.recog.image_matcher import image_match, compare_color_equal
 from bot.recog.ocr import ocr_line
@@ -57,18 +60,13 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
     base_info_list = ['-' if x == '' else str(x) for x in base_info.values()]
     uuid_str = "_".join(base_info_list)
     log.info(uuid_str)
-    if uuid_str in ctx.exist_uma:
-        log.info(f"{uuid_str} 已经获取过，跳过")
-        ctx.uma_result[uuid_str] = {}
+    if uuid_str in ctx.uma_file_list:
+        log.info(f"{uuid_str} 已经处理过，跳过")
         ctx.ctrl.click(719, 1, "返回列表")
-        ctx.exist_count += 1
-        if ctx.exist_count > 5:
-            return '超过6次'
+        ctx.this_page_done += 1
+        time.sleep(1)
         return None
-
-    ctx.exist_count = 0
     ctx.uma_result[uuid_str] = {"base_info": base_info, "relation": {}, "factor": {}, "data_version": CONFIG.dataversion, "account": CONFIG.role_name}
-    ctx.exist_uma[uuid_str] = ""
     ctx.uma_now = uuid_str
     # TODO 适应性解析
     # TODO 技能解析
@@ -149,6 +147,7 @@ def parser_uma_third_page(ctx: UmamusumeContext, img):
         get_parent_factor(ctx, k, v)
     time.sleep(0.5)
     parser_race_list(ctx)
+    ctx.this_page_done += 1
     ctx.ctrl.click(719, 1, "返回列表")
 
 
@@ -237,3 +236,85 @@ def cal_md5(factor: dict) -> str:
     md5 = hashlib.md5(str_data.encode('utf-8')).hexdigest()
     log.debug(f"输出的md5 为：{md5}")
     return md5
+
+
+def uma_list_match(target_image) -> dict:
+    start_time = time.time()
+    # 读取目标图像和原始图像
+    # target_gray = cv2.cvtColor(target_image, cv2.COLOR_BGR2GRAY)
+    img_folder_path = 'resource/umamusume/uma_head'
+    image_files = [f for f in os.listdir(img_folder_path) if os.path.isfile(os.path.join(img_folder_path, f))]
+
+    # 定义一个变量来存储匹配到的位置
+    matched_positions = []
+    for file in image_files:
+        image_path = os.path.join(img_folder_path, file)
+
+        _image = cv2.imread(image_path)
+        # 使用模板匹配方法来识别目标图像中的原始图像
+        result = cv2.matchTemplate(target_image, _image, cv2.TM_CCOEFF_NORMED)
+
+        # 设定一个阈值，用于确定匹配成功的程度
+        threshold = 0.8
+        target_image.shape[:2]
+        # 在目标图像中查找匹配的位置
+        loc = np.where(result >= threshold)
+
+        for pt in zip(*loc[::-1]):
+            match_score = result[pt[1], pt[0]]
+            matched_positions.append([pt[0], pt[1], (file.split('.')[0]).split('_')[0], match_score])
+
+    # 匹配的长度
+    log.info(f'Matched positions length: {len(matched_positions)}')
+    matched_positions = sorted(matched_positions, key=lambda point: (point[0], point[1]))
+    # 去重
+    temp_positions = {}
+    if matched_positions:
+        temp_positions[str(matched_positions[0][0])+'_'+str(matched_positions[0][1])] = matched_positions[0]
+        for pt in matched_positions[1:]:
+            if pt[1] > 880 or pt[1] < 90:
+                continue
+            is_closed = False
+            _temp_positions = temp_positions.copy()
+            # 10个像素内，选匹配度最高的
+            for k, v in _temp_positions.items():
+                if abs(pt[0]-v[0]) < 10 and abs(pt[1]-v[1]) < 10:
+                    is_closed = True
+                    if pt[3] < v[3]:
+                        break
+                    else:
+                        temp_positions[k] = pt
+                        break
+            if not is_closed:
+                temp_positions[str(pt[0])+'_'+str(pt[1])] = pt
+    log.info(f"识别耗时：{time.time()-start_time}")
+    log.info(f"去重后结果匹配的对象长度为： {len(temp_positions)}")
+    log.info("开始识别评分")
+    for v in temp_positions.values():
+        ocr_txt_image = target_image[(v[1]+96):(v[1]+116), (v[0]):(v[0]+80)]
+        ocr_txt_image = cv2.copyMakeBorder(ocr_txt_image, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
+        uma_score = ocr_line(ocr_txt_image)
+        if uma_score != '':
+            uma_score = int(re.sub("\\D", "", uma_score))
+        else:
+            uma_score = 'None'
+        v.append(v[2]+"_"+str(uma_score))  # shenying_11411
+    log.info("识别评分结束")
+    if len(temp_positions) != 25:
+        log.info("可能识别不全，图像先保存，待人工分析")
+        color_dict = {}
+        if len(temp_positions) > 0:
+            # 画框
+            for v in temp_positions.values():
+                if v[2] not in color_dict:
+                    color_dict[v[2]] = generate_random_color()
+                cv2.rectangle(target_image, (v[0], v[1]), (v[0] + 78, v[1] + 96), color_dict[v[2]], 2)
+            cv2.imwrite('resource/unknown_uma/'+'last' + str(int(time.time()))+'.jpg', target_image)
+    return temp_positions
+
+
+def generate_random_color():
+    r = random.randint(0, 255)
+    g = random.randint(0, 255)
+    b = random.randint(0, 255)
+    return (r, g, b)
