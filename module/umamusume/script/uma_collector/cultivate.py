@@ -42,7 +42,7 @@ def script_to_uma(ctx: UmamusumeContext):
         if check_finish(ctx=ctx):
             time.sleep(1)
             return
-        if ctx.this_page_done >= 25:
+        if ctx.this_page_done >= ctx.this_page_count and ctx.this_page_done != 0:
             log.info(">>>>>>> 翻页")
             ctx.ctrl.swipe(x1=350, y1=900, x2=350, y2=450, duration=1000, name="上滑")
             time.sleep(1)
@@ -96,6 +96,8 @@ def script_uma_third_page(ctx: UmamusumeContext):
 
 
 def check_finish(ctx: UmamusumeContext):
+    log.info(f"ctx.this_page_count : {ctx.this_page_count}")
+    log.info(f"ctx.this_page_done  : {ctx.this_page_done}")
     if ctx.this_page_done == 25 or ctx.this_page_count == ctx.this_page_done:
         log.info("需要判断是否到底了")
         img = ctx.ctrl.get_screen(to_gray=True)
