@@ -21,6 +21,7 @@ def load_uma_data():
     start_time = time.time()
     files = os.listdir(UMAMUSUME_RACE_TEMPLATE_PATH)
     UMA_DATA_DICT_LIST['uma_uuid'] = []
+    UMA_DATA_DICT_LIST['uma_score'] = []
     UMA_DATA_DICT_LIST['blue_factor'] = []
     UMA_DATA_DICT_LIST['red_factor'] = []
     UMA_DATA_DICT_LIST['all_blue_factor'] = []
@@ -42,6 +43,7 @@ def load_uma_data():
                 continue
             uma_uuid = file.split(".")[0]
             uma_factor = temp['factor']
+            uma_score = temp['base_info']['score']
             uma_father_factor = temp["relation"]['bb']['factor']
             uma_mother_factor = temp["relation"]['mm']['factor']
             temp_factor_list = [uma_factor, uma_father_factor, uma_mother_factor]
@@ -99,6 +101,7 @@ def load_uma_data():
             temp_str = ','.join([k+str(v) for k, v in factor_list.items()])
             UMA_DATA_DICT_LIST['uma_uuid'].append(uma_uuid)
             UMA_DATA_DICT_LIST['all_blue_factor'].append(blue_factor_result)
+            UMA_DATA_DICT_LIST['uma_score'].append(uma_score)
             UMA_DATA_DICT_LIST['all_red_factor'].append(red_factor_result)
             UMA_DATA_DICT_LIST['all_white_factor'].append(temp_str)
             UMA_DATA_DICT_LIST['blue_factor'].append(uma_blue_factor)
