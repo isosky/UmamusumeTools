@@ -11,7 +11,7 @@ log = logger.get_logger(__name__)
 # TODO 春季优俊少女 可以在天王春和春季优俊少女中获得，怎么处理
 
 
-def get_recommand_uma_list(target: dict, borrow: str = '', is_father: bool = True, mua_min_factor: int = 2, mua_min_blue: int = 4, is_bigmatch: bool = False, result_length: int = 10) -> list:
+def get_recommand_uma_list(target: dict, borrow: str = '',uma_except:list=[], is_father: bool = True, mua_min_factor: int = 2, mua_min_blue: int = 4, is_bigmatch: bool = False, result_length: int = 10) -> list:
     """
     target = {'uma_name':'caoshangfei','factor_list':['逆时针','春季优俊少女','URA'],"constraints":['耐力>=3']}
 
@@ -45,8 +45,8 @@ def get_recommand_uma_list(target: dict, borrow: str = '', is_father: bool = Tru
     # 计算每个马娘和目标因子的匹配程度
     temp_target_factor_list = target['factor_list']
     for uma in UMA_DATA_ALL:
-        if UMA_DATA_ALL[uma]['uma_name'] == 'shenying_10533_1200_648_740_264_341':
-            log.info('asdasd')
+        if UMA_DATA_ALL[uma]['uma_name'] in uma_except:
+            continue
         # log.debug(f" 开始计算 {UMA_LIST[uma]['uma_name']}")
         if is_bigmatch:
             # log.debug("大赛马考虑耐和智力")

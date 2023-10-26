@@ -5,10 +5,11 @@ from config import CONFIG
 log = logger.get_logger(__name__)
 
 
-target = {'uma_name': 'dashukuaiche', 'factor_list': ['中距离', '逆时针', 'URA剧本', '春季优俊少女', '天王奖（春）']}
-uma_borrow = 'wanshansiji'
+target = {'uma_name': 'futejia', 'factor_list': ['中距离', '逆时针', 'URA剧本', '春季优俊少女', '天王奖（春）']}
+uma_borrow = ''
+uma_except = []
 
-temp = get_recommand_uma_list(target=target, borrow=uma_borrow, is_father=False, mua_min_factor=2, mua_min_blue=7, is_bigmatch=True, result_length=10)
+temp = get_recommand_uma_list(target=target, borrow=uma_borrow,uma_except=uma_except, is_father=False, mua_min_factor=2, mua_min_blue=6, is_bigmatch=True, result_length=10)
 if uma_borrow == '':
     if temp:
         s = 1
