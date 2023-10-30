@@ -9,6 +9,7 @@ log = logger.get_logger(__name__)
 
 UMA_DATA_DICT_LIST: dict[str, list] = {}
 UMAMUSUME_RACE_TEMPLATE_PATH = "userdata/" + CONFIG.role_name
+UMAMUSUME_RACE_TEMPLATE_PATH_REMOVE = "userdata/" + CONFIG.role_name + '_remove'
 
 BLUR_FACTOR: dict = {'速度': "", '耐力': "", '力量': "", '毅力': "", '智力': ""}
 RED_FACTOR: dict = {'草地': "", '泥地': "", '短距离': "", '英里': "", '中距离': "", '长距离': "", '领跑': "", '跟前': "", '居中': "", '后追': ""}
@@ -16,29 +17,35 @@ GREEN_FACTOR: dict = {}
 
 # TODO 上下位因子合并，因子识别规范
 
+UMA_DATA_DICT_LIST['uma_uuid'] = []
+UMA_DATA_DICT_LIST['uma_score'] = []
+UMA_DATA_DICT_LIST['status'] = []
+UMA_DATA_DICT_LIST['blue_factor'] = []
+UMA_DATA_DICT_LIST['red_factor'] = []
+UMA_DATA_DICT_LIST['all_blue_factor'] = []
+UMA_DATA_DICT_LIST['all_red_factor'] = []
+UMA_DATA_DICT_LIST['white_factor'] = []
+UMA_DATA_DICT_LIST['all_white_factor'] = []
 
-def load_uma_data():
+
+def load_uma_data(filepath=UMAMUSUME_RACE_TEMPLATE_PATH):
     start_time = time.time()
-    files = os.listdir(UMAMUSUME_RACE_TEMPLATE_PATH)
-    UMA_DATA_DICT_LIST['uma_uuid'] = []
-    UMA_DATA_DICT_LIST['uma_score'] = []
-    UMA_DATA_DICT_LIST['blue_factor'] = []
-    UMA_DATA_DICT_LIST['red_factor'] = []
-    UMA_DATA_DICT_LIST['all_blue_factor'] = []
-    UMA_DATA_DICT_LIST['all_red_factor'] = []
-    UMA_DATA_DICT_LIST['white_factor'] = []
-    UMA_DATA_DICT_LIST['all_white_factor'] = []
+    files = os.listdir(filepath)
+    if '_remove' in filepath:
+        status = 'remove'
+    else:
+        status = 'keep'
 
     for file in files:
         if 'unknown' in file:
-            os.remove(os.path.join(UMAMUSUME_RACE_TEMPLATE_PATH, file))
+            os.remove(os.path.join(filepath, file))
             log.info(f"{file} 中存在未识别的马娘，先移除")
             continue
         if 'json' in file:
-            with open(os.path.join(UMAMUSUME_RACE_TEMPLATE_PATH, file), 'r', encoding='utf-8') as f:
+            with open(os.path.join(filepath, file), 'r', encoding='utf-8') as f:
                 temp = json.load(f)
             if 'unknown' in temp['base_info']['uma_name'] or 'unknown' in temp['relation']['bb']['uma_name'] or 'unknown' in temp['relation']['mm']['uma_name']:
-                os.remove(os.path.join(UMAMUSUME_RACE_TEMPLATE_PATH, file))
+                os.remove(os.path.join(filepath, file))
                 log.info(f"{file} 中存在未识别的马娘，先移除")
                 continue
             uma_uuid = file.split(".")[0]
@@ -107,8 +114,10 @@ def load_uma_data():
             UMA_DATA_DICT_LIST['blue_factor'].append(uma_blue_factor)
             UMA_DATA_DICT_LIST['red_factor'].append(uma_red_factor)
             UMA_DATA_DICT_LIST['white_factor'].append(uma_factor)
+            UMA_DATA_DICT_LIST['status'].append(status)
 
     log.info(f"加载马娘数据耗时:{time.time()-start_time}")
 
 
 load_uma_data()
+load_uma_data(UMAMUSUME_RACE_TEMPLATE_PATH_REMOVE)

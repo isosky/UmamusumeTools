@@ -49,7 +49,7 @@ def script_to_uma(ctx: UmamusumeContext):
             ctx.this_page_is_work = False
             ctx.this_page_done = 0
         screen = ctx.ctrl.get_screen()
-        uma_result,duplication_dict = uma_list_match(screen)
+        uma_result, duplication_dict = uma_list_match(screen)
         ctx.this_page_count = len(uma_result)
         for uma in uma_result:
             _temp = uma_result[uma]
@@ -109,7 +109,7 @@ def check_finish(ctx: UmamusumeContext):
             for uma in ctx.uma_file_list:
                 if uma not in ctx.uma_result:
                     log.info(f"{uma} 已经不存在了，移走")
-                    shutil.move('userdata/'+CONFIG.role_name+'/'+uma+'.json', 'userdata/'+CONFIG.role_name+'_error/'+uma+'.json')
+                    shutil.move('userdata/'+CONFIG.role_name+'/'+uma+'.json', 'userdata/'+CONFIG.role_name+'_remove/'+uma+'.json')
             ctx.task.end_task(TaskStatus.TASK_STATUS_SUCCESS, EndTaskReason.COMPLETE)
             return True
     else:
