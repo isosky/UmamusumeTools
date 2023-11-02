@@ -292,7 +292,7 @@ def uma_list_match(target_image) -> dict:
     log.info(f"去重后结果匹配的对象长度为： {len(temp_positions)}")
     log.info("开始识别评分")
     duplication_dict = {}
-    _factor_dict= {}
+    _factor_dict = {}
     for v in temp_positions.values():
         ocr_txt_image = target_image[(v[1]+96):(v[1]+116), (v[0]):(v[0]+80)]
         ocr_txt_image = cv2.copyMakeBorder(ocr_txt_image, 20, 20, 20, 20, cv2.BORDER_CONSTANT, None, (255, 255, 255))
@@ -306,7 +306,7 @@ def uma_list_match(target_image) -> dict:
         if _uma_score not in _factor_dict:
             _factor_dict[_uma_score] = 1
         else:
-            duplication_dict[_uma_score] =1
+            duplication_dict[_uma_score] = 1
             log.info(f"{_uma_score} 在本页有多个，需要都抓取判断一下")
     log.info("识别评分结束")
     if len(temp_positions) != 25:
@@ -319,7 +319,7 @@ def uma_list_match(target_image) -> dict:
                     color_dict[v[2]] = generate_random_color()
                 cv2.rectangle(target_image, (v[0], v[1]), (v[0] + 78, v[1] + 96), color_dict[v[2]], 2)
             cv2.imwrite('resource/unknown_uma/'+'last' + str(int(time.time()))+'.jpg', target_image)
-    return temp_positions,duplication_dict
+    return temp_positions, duplication_dict
 
 
 def generate_random_color():
