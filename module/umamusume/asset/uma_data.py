@@ -3,6 +3,8 @@ import os.path
 import json
 import bot.base.log as logger
 from config import CONFIG
+from bot.base.resource import Template
+from module.cal_compatibility.asset.matrix_load import UMA_TRANSLATE
 
 log = logger.get_logger(__name__)
 
@@ -25,6 +27,7 @@ def load_uma_list():
                 temp = json.load(f)
             for v in temp['relation'].values():
                 if 'unknown' in v['uma_name'] or 'unknown' in v['bb']['uma_name'] or 'unknown' in v['mm']['uma_name']:
+                    # if 'caoshangfei' in v['uma_name'] or 'caoshangfei' in v['bb']['uma_name'] or 'caoshangfei' in v['mm']['uma_name']:
                     os.remove(os.path.join(UMAMUSUME_RACE_TEMPLATE_PATH, file))
                     log.info(f"{file} 中存在未识别的马娘，先移除")
                     continue
@@ -38,4 +41,21 @@ def load_uma_list():
     log.info("结束加载马娘数据")
 
 
+UMA_ROLE_LIST: list[Template] = []
+UMAMUSUME_UMA_ROLE_TEMPLATE_PATH = "resource/umamusume/uma_role"
+_UMAMUSUME_UMA_ROLE_TEMPLATE_PATH = "/umamusume/uma_role"
+
+
+def load_uma_head():
+    # role
+    image_files = [f for f in os.listdir(UMAMUSUME_UMA_ROLE_TEMPLATE_PATH) if os.path.isfile(os.path.join(UMAMUSUME_UMA_ROLE_TEMPLATE_PATH, f))]
+    for i in image_files:
+        temp_name = i[:-4]
+        if temp_name.split('_')[0] not in UMA_TRANSLATE.values():
+            log.warning(f"{temp_name} 不在相性名称表里面，请检查")
+        temp_name = Template(temp_name, _UMAMUSUME_UMA_ROLE_TEMPLATE_PATH)
+        UMA_ROLE_LIST.append(temp_name)
+
+
 load_uma_list()
+load_uma_head()

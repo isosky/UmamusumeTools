@@ -12,6 +12,7 @@ from bot.recog.ocr import ocr_line
 from module.umamusume.context import UmamusumeContext
 from module.umamusume.asset import *
 from module.umamusume.define import *
+from module.umamusume.asset.uma_data import UMA_ROLE_LIST
 import bot.base.log as logger
 from config import CONFIG
 
@@ -67,7 +68,7 @@ def parser_uma_frist_page(ctx: UmamusumeContext, img):
         ctx.this_page_done += 1
         time.sleep(1)
         return None
-    ctx.uma_result[uuid_str] = {"base_info": base_info, "relation": {}, "factor": {}, "data_version": CONFIG.dataversion, "account": CONFIG.role_name}
+    ctx.uma_result[uuid_str] = {"base_info": base_info, "relation": {}, "factor": {}, "data_version": CONFIG.dataversion, "account": CONFIG.role_name, "collect_time": int(time.time())}
     ctx.uma_now = uuid_str
     # TODO 适应性解析
     # TODO 技能解析
@@ -84,15 +85,17 @@ def parse_uma_role(ctx: UmamusumeContext, img):
     for i in range(len(UMA_ROLE_LIST)):
         result = image_match(img, UMA_ROLE_LIST[i])
         if result.find_match:
-            log.info(UraRoleList(i+1))
+            _name = UMA_ROLE_LIST[i].template_name.lower().split('_')[0]
+            log.info(_name)
             end_time = time.time()
             log.debug("detect 头像 cost: " + str(end_time - start_time))
-            return UraRoleList(i+1).name.lower().split('_')[0]
+            return _name
     log.warning("有未添加的头像，请人工处理")
-    cv2.imwrite("resource/unknown_uma/uma_" + str(int(time.time())) + ".jpg", temp1)
+    unkown_head = temp1[25:145, 75:205]
+    cv2.imwrite("resource/unknown_uma/uma_" + str(int(time.time())) + ".png", unkown_head)
     end_time = time.time()
     log.debug("detect 头像 cost: " + str(end_time - start_time))
-    return UraRoleList(0).name.lower().split('_')[0]
+    return 'unknown'
 
 
 def parser_uma_second_page(ctx: UmamusumeContext, img):
@@ -170,6 +173,8 @@ def get_parent_factor(ctx: UmamusumeContext, relation: str, infos: dict):
         for k, v in infos['parent'].items():
             uma_name, factor = parser_parent_factor(ctx, k, v, isparent=True)
             ctx.uma_data_info[md5][k] = {'uma_name': uma_name, 'factor': factor, 'is_borrow': is_borrow}
+    else:
+        log.info(f"{uma_name} 存在，跳过*****")
     ctx.uma_result[ctx.uma_now]['relation'][relation] = ctx.uma_data_info[md5]
     time.sleep(0.5)
 
